@@ -1,0 +1,3 @@
+# Conversion toolchain
+
+The OAAX OpenVINO runtime doesn't need a conversion toolchain to run models. The runtime is capable of running ONNX models directly as it performs optimization on-device. However, if you want to simplify/optimize the ONNX model for the OpenVINO runtime, you can use conversion toolchain in the [OAAX reference implementation](https://github.com/OAAX-standard/reference-implementation/tree/main/conversion-toolchain) as a starting point.

@@ -1,0 +1,117 @@
+parameters:
+- name: NpmPublish
+  displayName: 'NPM packages publish configuration'
+  type: string
+  values:
+  - 'nightly (@dev)'
+  - 'release candidate (@rc)'
+  - 'production (@latest)'
+  - 'custom'
+  default: 'nightly (@dev)'
+
+- name: NodePipelineId
+  displayName: 'Node npm package build Id'
+  type: string
+  default: 'latest'
+
+variables:
+  # pipeline should define the following varaibles
+  #   ExtraBuildArgs
+  #   VersionSuffix
+
+  ${{ if eq(parameters.NpmPublish, 'nightly (@dev)') }}:
+    NpmPackagingMode: 'dev'
+  ${{ if eq(parameters.NpmPublish, 'release candidate (@rc)') }}:
+    NpmPackagingMode: 'rc'
+  ${{ if eq(parameters.NpmPublish, 'production (@latest)') }}:
+    NpmPackagingMode: 'release'
+  ${{ if eq(parameters.NpmPublish, 'custom') }}:
+    NpmPackagingMode: '$(VersionSuffix)'
+
+resources:
+  repositories:
+  - repository: manylinux
+    type: Github
+    endpoint: Microsoft
+    name: pypa/manylinux
+    ref: 5eda9aded5462201e6310105728d33016e637ea7
+
+stages:
+- template: templates/web-ci.yml
+  parameters:
+    NpmPackagingMode: ${{ variables.NpmPackagingMode }}
+    IsReleasePipeline: true
+    PoolName: 'Azure-Pipelines-EO-Windows2022-aiinfra'
+    PackageName: 'onnxruntime-web'
+    ExtraBuildArgs: ''
+
+- template: templates/react-native-ci.yml
+  parameters:
+    NpmPackagingMode: ${{ variables.NpmPackagingMode }}
+    BuildConfig: 'Release'
+    PoolName: 'onnxruntime-Ubuntu2004-AMD-CPU'
+    PackageName: 'onnxruntime-react-native'
+    BuildAndroidAARStageDependsOn: 'Precheck_and_extract_commit'
+
+- stage: Download_Node_Package_And_Publish_Validation_Script
+  dependsOn:
+  - ReactNative_CI
+  - Build_web_Release
+  - Build_web_Debug
+  jobs:
+  - job: Download_Node_Package_And_Publish_Validation_Script
+    pool: 'Azure-Pipelines-EO-Windows2022-aiinfra'
+    variables:
+      runCodesignValidationInjection: false
+    timeoutInMinutes: 10
+    steps:
+
+    - ${{ if eq(parameters.NodePipelineId, 'latest') }}:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          buildType: 'specific'
+          project: '530acbc4-21bc-487d-8cd8-348ff451d2ff'
+          definition: '940'
+          specificBuildWithTriggering: true
+          buildVersionToDownload: 'latest'
+          artifactName: 'NPM_packages'
+          targetPath: '$(Pipeline.Workspace)'
+        displayName: 'Download onnxruntime-node Pipeline Artifact'
+
+    - ${{ if ne(parameters.NodePipelineId, 'latest') }}:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          buildType: 'specific'
+          project: '530acbc4-21bc-487d-8cd8-348ff451d2ff'
+          definition: '940'
+          buildVersionToDownload: 'specific'
+          pipelineId: '${{ parameters.NodePipelineId }}'
+          artifactName: 'NPM_packages'
+          targetPath: '$(Pipeline.Workspace)'
+        displayName: 'Download onnxruntime-node Pipeline Artifact'
+
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: $(Pipeline.Workspace)
+        contents: onnxruntime-*.tgz
+        targetFolder: $(Build.ArtifactStagingDirectory)\node-artifacts
+      displayName: 'Copy onnxruntime-node Artifacts'
+
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: 'onnxruntime-node'
+        targetPath: '$(Build.ArtifactStagingDirectory)\node-artifacts'
+      displayName: 'Publish onnxruntime-node Pipeline Artifact'
+
+    - task: CopyFiles@2
+      inputs:
+        sourceFolder: $(Build.SourcesDirectory)\tools\ci_build\github\js
+        contents: validate-npm-packages.py
+        targetFolder: $(Build.ArtifactStagingDirectory)\validation-scripts
+      displayName: 'Copy validation scripts'
+
+    - task: PublishPipelineArtifact@0
+      inputs:
+        artifactName: 'validation_scripts'
+        targetPath: '$(Build.ArtifactStagingDirectory)\validation-scripts'
+      displayName: 'Publish validation scripts'
