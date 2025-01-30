@@ -11,3 +11,15 @@ CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
 build
+
+# Python
+venv
+env
+*.pyc
+*.pyo
+__pycache__
+*.egg-info
+
+# Conversion folders/files
+input
+output
