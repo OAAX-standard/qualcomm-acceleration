@@ -12,9 +12,10 @@ set(DEPS_DIR ${CMAKE_CURRENT_LIST_DIR}/deps)
 # set COMPILER_PREFIX, for example, "" for default compiler, arm-linux- , or aarch64-linux- etc for cross compilers
 # set generic build target
 set(GENERIC_BUILD_TARGET AARCH64)
-# set(CROSS_ROOT "/opt/gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu")
+set(CROSS_ROOT "/opt/gcc-arm-11.2-2022.02-x86_64-aarch64-none-linux-gnu")
+# set(CROSS_ROOT "/opt/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu")
 # set(CROSS_ROOT "/opt/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu")
-set(CROSS_ROOT "/opt/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu")
+# set(CROSS_ROOT "/opt/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu")
 set(COMPILER_PREFIX "aarch64-none-linux-gnu-")
 
 set(CMAKE_C_COMPILER ${CROSS_ROOT}/bin/${COMPILER_PREFIX}gcc)
@@ -72,7 +73,7 @@ set(CMAKE_RANLIB ${CROSS_ROOT}/bin/${COMPILER_PREFIX}ranlib)
 set(CMAKE_C_COMPILER ${CROSS_ROOT}/bin/${COMPILER_PREFIX}gcc)
 set(CMAKE_CXX_COMPILER ${CROSS_ROOT}/bin/${COMPILER_PREFIX}g++)
 set(CMAKE_ASM_COMPILER ${CROSS_ROOT}/bin/${COMPILER_PREFIX}gcc)
-set(CMAKE_NM ${CROSS_ROOT}/bin/${COMPILER_PREFIX}NM)
+set(CMAKE_NM ${CROSS_ROOT}/bin/${COMPILER_PREFIX}nm)
 
 # this is the file system root of the target
 set(CMAKE_FIND_ROOT_PATH ${SDKTARGETSYSROOT})
@@ -139,16 +140,7 @@ target_link_libraries(
         RuntimeLibrary
         PUBLIC
 
-        onnxruntime_session
-        onnxruntime_optimizer
-        onnxruntime_providers
-        onnxruntime_providers_qnn
-        onnxruntime_util
-        onnxruntime_framework
-        onnxruntime_graph
-        onnxruntime_mlas
-        onnxruntime_common
-        onnxruntime_flatbuffers
+        -Wl,--start-group
 
         absl_bad_optional_access
         absl_bad_variant_access
@@ -160,58 +152,84 @@ target_link_libraries(
         absl_cordz_functions
         absl_cordz_handle
         absl_cordz_info
-        # absl_crc32c
-        # absl_crc_cord_state
-        # absl_crc_cpu_detect
-        # absl_crc_internal
+        absl_crc32c
+        absl_crc_cord_state
+        absl_crc_cpu_detect
+        absl_crc_internal
         absl_debugging_internal
+        absl_decode_rust_punycode
         absl_demangle_internal
+        absl_demangle_rust
+        absl_examine_stack
         absl_exponential_biased
-        # absl_flags_commandlineflag
-        # absl_flags_commandlineflag_internal
-        # absl_flags_config
-        # absl_flags_internal
-        # absl_flags_marshalling
-        # absl_flags_private_handle_accessor
-        # absl_flags_program_name
-        # absl_flags_reflection
-        # absl_graphcycles_internal
+        absl_flags_commandlineflag
+        absl_flags_commandlineflag_internal
+        absl_flags_config
+        absl_flags_internal
+        absl_flags_marshalling
+        absl_flags_private_handle_accessor
+        absl_flags_program_name
+        absl_flags_reflection
+        absl_graphcycles_internal
         absl_hash
         absl_hashtablez_sampler
         absl_int128
-        # absl_kernel_timeout_internal
+        absl_kernel_timeout_internal
+        absl_log_entry
+        absl_log_globals
+        absl_log_internal_check_op
+        absl_log_internal_conditions
+        absl_log_internal_fnmatch
+        absl_log_internal_format
+        absl_log_internal_globals
+        absl_log_internal_log_sink_set
+        absl_log_internal_message
+        absl_log_internal_nullguard
+        absl_log_internal_proto
         absl_log_severity
+        absl_log_sink
         absl_low_level_hash
         absl_malloc_internal
         absl_raw_hash_set
         absl_raw_logging_internal
         absl_spinlock_wait
         absl_stacktrace
-        # absl_str_format_internal
-        # absl_string_view
+        absl_strerror
+        absl_str_format_internal
         absl_strings
         absl_strings_internal
+        absl_string_view
         absl_symbolize
         absl_synchronization
         absl_throw_delegate
         absl_time
         absl_time_zone
+        absl_utf8_for_code_point
+        absl_vlog_config_internal
         cpuinfo
         flatbuffers
-        nsync_cpp
         onnx
         onnx_proto
-        protobuf-lite
-        clog
+        onnxruntime_common
+        onnxruntime_flatbuffers
+        onnxruntime_framework
+        onnxruntime_graph
+        onnxruntime_lora
+        onnxruntime_mlas
+        onnxruntime_optimizer
+        onnxruntime_providers
+        onnxruntime_providers_qnn
+        onnxruntime_session
+        onnxruntime_util
+        protobuf-lited
+        re2
 
+        atomic
         pthread
         stdc++
+        -Wl,--end-group
 )
 
-# Copy all files inside QNN_DIR to the build directory
-add_custom_command(TARGET RuntimeLibrary POST_BUILD
-        COMMAND cp ${QNN_DIR}/${GENERIC_BUILD_TARGET}/* ${CMAKE_CURRENT_BINARY_DIR}/
-)
 add_custom_command(TARGET RuntimeLibrary POST_BUILD
         COMMAND cp ${ONNX_RUNTIME_DIR}/${GENERIC_BUILD_TARGET}/*.so ${CMAKE_CURRENT_BINARY_DIR}/
 )

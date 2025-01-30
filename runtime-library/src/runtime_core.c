@@ -13,7 +13,7 @@
 #define ONNXRUNTIME_API_VERSION 15
 #endif
 
-#define N_QNN_OPTIONS 5
+#define N_QNN_OPTIONS 7
 
 #define QUEUE_CAPACITY 100// The maximum number of items that a queue can hold
 #define THREAD_SAFE true
@@ -137,9 +137,9 @@ int runtime_initialization() {
         log_info( logger, "QNN_BACKEND_PATH: %s", backend_path );
         const char *const provider_options_keys[N_QNN_OPTIONS] = {
                 "backend_path", "htp_graph_finalization_optimization_mode",
-                "disable_cpu_ep_fallback", "htp_performance_mode", "profiling_level" };
+                "disable_cpu_ep_fallback", "htp_performance_mode", "profiling_level", "enable_htp_fp16_precision", "profiling_file_path" };
         const char *const provider_options_values[N_QNN_OPTIONS] = {
-                backend_path, "1", "1", "high_performance", "detailed" };
+                backend_path, "1", "1", "high_performance", "detailed", "0", "./qnn-profile.csv" };
 
         runtime_core_process_status( api->SetSessionGraphOptimizationLevel( session_options[i], ORT_ENABLE_BASIC ) );
         runtime_core_process_status( api->SetIntraOpNumThreads( session_options[i], n_threads_per_duplicate ) );
