@@ -1,0 +1,6 @@
+lgg
+onnx
+onnxsim
+onnxruntime==1.19.0
+pydantic
+pillow
