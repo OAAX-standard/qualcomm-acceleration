@@ -1,0 +1,54 @@
+name: Build OAAX conversion toolchain
+
+on:
+  push:
+    # branches:
+    #   - main
+
+jobs:
+  build-toolchain:
+    timeout-minutes: 10  # Set a timeout of 10 minutes for the job
+    runs-on: self-hosted
+    container:
+      image: ubuntu:22.04  # or any other image
+      options: --volume /var/run/docker.sock:/var/run/docker.sock
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Install s3cmd
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y s3cmd docker.io
+
+      - name: Configure s3cmd
+        run: |
+          cat > ~/.s3cfg <<EOF
+          [default]
+          access_key = ${{ secrets.S3_ACCESS_KEY }}
+          secret_key = ${{ secrets.S3_SECRET_KEY }}
+          bucket_location = us-east-1
+          host_base = ${{ secrets.S3_ENDPOINT_URL }}
+          host_bucket = %(bucket)s.${{ secrets.S3_ENDPOINT_URL }}
+          use_https = True
+          EOF
+
+      - name: Build conversion toolchain image
+        run: bash conversion-toolchain/build-toolchain.sh
+
+      - name: Determine version
+        run: |
+          if [ -f VERSION ]; then
+            version=$(cat VERSION)
+          else
+            exit 1
+          fi
+          echo "version=$version" >> $GITHUB_ENV
+
+      - name: Upload Docker image to S3
+        run: |
+          bash scripts/upload-to-storage.sh "conversion-toolchain/${{ env.version }}/Qualcomm" conversion-toolchain/artifacts/*.tar
